@@ -1,2 +1,2 @@
-# Understanding Vagrancy in Yellow-browed warblers *Phylloscopus inornatus*
-Analysis to examine origins of vagrant Yellow-browed warblers in western Europe.
+# Understanding Vagrancy in Yellow-browed Warblers *Phylloscopus inornatus*
+Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe.
