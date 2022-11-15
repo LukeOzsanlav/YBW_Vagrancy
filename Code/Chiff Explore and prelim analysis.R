@@ -4,6 +4,8 @@
 ## Preliminary exploration of the stable isotope, morphometric and phenological data from Chiffchaff
 ## Start re-creating some of the analysis carried out by Robbie that could go into a manuscript
 
+## NOTE** there are lots of correlation between variables so modelling needs to be done carefully
+
 ## packages required
 pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm)
 
@@ -87,15 +89,15 @@ cor(CorVars) # get matrix of correlation scores for the variables
 ## Now check for correlation between Sub species and the continuous predictors
 ## set variables to the correct class first
 Chiff$subspecies <- as.factor(Chiff$subspecies)
-#wp, tars, tail, wing, weight, fat, Cap_yday
-biserial.cor(Chiff$wp, Chiff$subspecies)
-biserial.cor(Chiff$tars, Chiff$subspecies)
-biserial.cor(Chiff$tail, Chiff$subspecies)
-biserial.cor(Chiff$wing, Chiff$subspecies)
-biserial.cor(Chiff$weight, Chiff$subspecies)
-biserial.cor(Chiff$fat, Chiff$subspecies)
-biserial.cor(Chiff$Cap_yday, Chiff$subspecies)
 
+## run a linear model and then
+anova(lm(Chiff$wp~ Chiff$subspecies))
+anova(lm(Chiff$tars~ Chiff$subspecies))
+anova(lm(Chiff$tail~ Chiff$subspecies))
+anova(lm(Chiff$wing~ Chiff$subspecies))
+anova(lm(Chiff$weight~ Chiff$subspecies))
+anova(lm(Chiff$fat~ Chiff$subspecies))      # **Significant
+anova(lm(Chiff$Cap_yday~ Chiff$subspecies)) # **Significant
 
 
 ##----------------------------------------##
@@ -140,9 +142,10 @@ summary(mod1)
 
 ## drop the rows which do not have data for some of the variables
 ChiffComp <- Chiff %>% drop_na(wing, Cap_yday)
+ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
 
 ## Add interactions between the sub species and the other explanatory variables
-modcomp <- gls(isotope~ subspecies*Cap_yday + subspecies*wing,
+modcomp <- gls(isotope~ subspecies*wing,
             data=ChiffComp, 
             weights = varIdent(form = ~1|subspecies), 
             method="ML")
