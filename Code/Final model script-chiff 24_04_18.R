@@ -1,9 +1,8 @@
 ## Importing data ##
-
-setwd("C:/Users/Robbie/Documents/4th year modules/Research/Rdata")
-
-startdata<-read.table("alldatachiff.txt",header=T)
+startdata <- read.table("Data/alldatachiff.txt",header=T)
 head(startdata)
+
+isodata <- read.table("Data/allisotopechiff.txt",header=T)
 
 
 ## Check data and import ##
