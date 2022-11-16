@@ -13,16 +13,19 @@ pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm)
 
 
 ##------------------------------------##
-#### 1. Read in stable Isotope data ####
+#### 1. Read in stable isotope data ####
 ##------------------------------------##
 
 ## Read in text file with data
 Chiff <- read.table("Data/alldatachiff.txt",header=T)
 glimpse(Chiff)
 
-## create a column for year day from the date, easuer to work with
+## create a column for year day from the date, easier to work with
 Chiff <- Chiff %>% 
           mutate(Cap_yday = yday(dmy(date)))
+
+## Study duration
+paste0(min(dmy(Chiff$date)), " to ", max(dmy(Chiff$date)))
 
 
 
@@ -69,10 +72,9 @@ ggplot(data = Chiff) +
 #### 3. Make correlation matrix of key variables ####
 ##-------------------------------------------------##
 
-
 ## lets select some variables that I'm interested in that could be continuous predictors
 CorVars <- Chiff %>% 
-           select(wp, tars, tail, wing, weight, fat, Cap_yday) %>% 
+           dplyr::select(wp, tars, tail, wing, weight, fat, Cap_yday, condition) %>% 
            drop_na()
 
 cor(CorVars) # get matrix of correlation scores for the variables
@@ -84,6 +86,7 @@ cor(CorVars) # get matrix of correlation scores for the variables
 ## Wing & Tail
 ## Tail & Tarsus
 ## Weight and fat
+## Condition and far
 
 
 ## Now check for correlation between Sub species and the continuous predictors
@@ -96,17 +99,19 @@ anova(lm(Chiff$tars~ Chiff$subspecies))
 anova(lm(Chiff$tail~ Chiff$subspecies))
 anova(lm(Chiff$wing~ Chiff$subspecies))
 anova(lm(Chiff$weight~ Chiff$subspecies))
-anova(lm(Chiff$fat~ Chiff$subspecies))      # **Significant
-anova(lm(Chiff$Cap_yday~ Chiff$subspecies)) # **Significant
+anova(lm(Chiff$fat~ Chiff$subspecies))      # **Significant: fat*Subspecies
+anova(lm(Chiff$Cap_yday~ Chiff$subspecies)) # **Significant: Capture Day*sub-species
+
+
 
 
 ##----------------------------------------##
 #### 4. Hydrogen Isotope vs Sub-species ####
 ##----------------------------------------##
 
-
 ## Model how hydrogen isotope varies across the different sub-species
-## Will need to account for heterscedacisity between groups, Robbie siad this was a problem in the thesis
+## Will need to account for heteroscedacisity between groups, Robbie said this was a problem in the thesis
+## I can control for this so will model all three sub-species at once
 
 
 ## set variables to the correct class
@@ -124,49 +129,171 @@ mod <- gls(isotope~ subspecies,
             #weights = varIdent(form = ~1|subspecies), 
             method="ML")
 
-## comparing the two models, adding the weights agruement doesnt really make that much of a difference
+## comparing the two models, adding the weights argument does not really make that much of a difference
+## It's close though so will keep it in
 anova(mod1, mod)
 
-## Get sumamry of the model with the weight
+## Get summary of the model with the weight
 ## Seems like all the groups are different but Tristis is a lot lower
 summary(mod1)
 
+## plot the model effects
+mod1effects <- predictorEffects(mod1)
+plot(mod1effects)
 
 
 
-##----------------------------------------##
-#### 5. Hydrogen Isotope vs Sub-species ####
-##----------------------------------------##
 
-## Increase the model complexity
+##-------------------------------------------------##
+#### 5. Hydrogen Isotope vs Subspecies variables ####
+##-------------------------------------------------##
 
-## drop the rows which do not have data for some of the variables
-ChiffComp <- Chiff %>% drop_na(wing, Cap_yday)
-ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
+## Model how hydrogen isotopes vary with arrival date, wing length, wing pointedness and mass
+## Will need to run a model for each of these sub-species individually, due to differences in arrival date between groups
 
+
+## First work out how much data is missing for each of these variables
+## There 16 NA values by
+## 5 NAs for weight but all in Collybita
+## 4 NAs in wing but all in Collybita
+## 16 NAs in poitedness across all sub-species
+Chiff %>% dplyr::select(Cap_yday, wing, pointedness, weight) %>% group_by() %>% summary()
+
+
+## re-level the subspecies factor (NOT NEEDED CURRENTLY)
+# ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
+
+
+## Now create three data sets, one for each subspecies
+## dropping the rows with missing data for each along the way
+Coll <- Chiff %>% filter(subspecies == "C") %>% drop_na(wing, Cap_yday, weight)
+Abie <- Chiff %>% filter(subspecies == "A") %>% drop_na(wing, Cap_yday, weight)
+Tris <- Chiff %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, weight)
+
+
+## **MODEL: Collybita ##
 ## Add interactions between the sub species and the other explanatory variables
-modcomp <- gls(isotope~ subspecies*wing,
-            data=ChiffComp, 
-            weights = varIdent(form = ~1|subspecies), 
-            method="ML")
+ModColl <- gls(isotope ~ wing + Cap_yday + weight,
+               data=Coll, 
+               method="ML")
 
-summary(modcomp)
+# get model summaries
+summary(ModColl) # significant effect of wing length (negative relationship)
+anova(ModColl)
 
-
-## Lots of the variables that Robbie used are correlated, i.e. the arrival dates differ between species
-## So the can not go into the same model. 
-## Feels like Robbie's approach might not be that bad
-## To start with I could just initially model H2 ~ sup-species
-## I could then model each sub-species separately but just have model for each
-## I.e. H2 (Trisits only) ~  wing*arrival date + SMI
-## This way i could get away with one big model at the start and then three sperate model to explan variation in H2. 
+# plot the predictor effects
+ModColleffects <- predictorEffects(ModColl)
+plot(ModColleffects)
 
 
 
+## **MODEL: Abietinus ##
+## Add interactions between the sub species and the other explanatory variables
+ModAbie <- gls(isotope ~ wing + Cap_yday + weight,
+               data=Abie, 
+               method="ML")
+
+# get model summaries
+summary(ModAbie)
+anova(ModAbie)
+
+# plot the predictor effects
+ModAbieeffects <- predictorEffects(ModAbie)
+plot(ModAbieeffects)
+
+
+
+## **MODEL: Tristis ##
+## Add interactions between the sub species and the other explanatory variables
+ModTris <- gls(isotope ~ wing + Cap_yday + weight,
+               data=Tris, 
+               method="ML")
+
+# get model summaries
+summary(ModTris)
+anova(ModTris)
+
+# plot the predictor effects
+ModTriseffects <- predictorEffects(ModTris)
+plot(ModTriseffects)
 
 
 
 
+##---------------------------------------------##
+#### 5. Arrival date vs Subspecies variables ####
+##---------------------------------------------##
+
+## **** Need to work out how condition is calculated, does not specifically say in the thesis
+
+## Model how capture date it related to various sub-species variables
+## Workflow will be the same as the above, modeling the three sub-species separately
+
+
+## First work out how much data is missing for each of these variables
+## There 16 NA values by
+## 5 NAs for weight but all in Collybita
+## 4 NAs in wing but all in Collybita
+## 16 NAs in poitedness across all sub-species
+Chiff %>% dplyr::select(Cap_yday, wing, fat, condition) %>% group_by() %>% summary()
+
+
+## re-level the subspecies factor (NOT NEEDED CURRENTLY)
+# ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
+
+
+## Now create three data sets, one for each subspecies
+## dropping the rows with missing data for each along the way
+Coll2 <- Chiff %>% filter(subspecies == "C") %>% drop_na(Cap_yday, wing, fat, condition)
+Abie2 <- Chiff %>% filter(subspecies == "A") %>% drop_na(Cap_yday, wing, fat, condition)
+Tris2 <- Chiff %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, condition)
+
+
+## **MODEL: Collybita ##
+## Add interactions between the sub species and the other explanatory variables
+ModColl <- gls(isotope ~ wing + Cap_yday + condition,
+               data=Coll, 
+               method="ML")
+
+# get model summaries
+summary(ModColl) # significant effect of wing length (negative relationship)
+anova(ModColl)
+
+# plot the predictor effects
+ModColleffects <- predictorEffects(ModColl)
+plot(ModColleffects)
+
+
+
+## **MODEL: Abietinus ##
+## Add interactions between the sub species and the other explanatory variables
+ModAbie <- gls(isotope ~ wing + Cap_yday + weight,
+               data=Abie, 
+               method="ML")
+
+# get model summaries
+summary(ModAbie)
+anova(ModAbie)
+
+# plot the predictor effects
+ModAbieeffects <- predictorEffects(ModAbie)
+plot(ModAbieeffects)
+
+
+
+## **MODEL: Tristis ##
+## Add interactions between the sub species and the other explanatory variables
+ModTris <- gls(isotope ~ wing + Cap_yday + weight,
+               data=Tris, 
+               method="ML")
+
+# get model summaries
+summary(ModTris)
+anova(ModTris)
+
+# plot the predictor effects
+ModTriseffects <- predictorEffects(ModTris)
+plot(ModTriseffects)
 
 
 
