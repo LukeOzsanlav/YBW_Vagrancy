@@ -7,7 +7,7 @@
 ## NOTE** there are lots of correlation between variables so modelling needs to be done carefully
 
 ## packages required
-pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm)
+pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif)
 
 
 
@@ -142,6 +142,23 @@ mod1effects <- predictorEffects(mod1)
 plot(mod1effects)
 
 
+
+## Make the plot for the paper
+## rename the sub-species columns first for plotting
+ChiffBoxPlot <- Chiff %>%                              
+                mutate(subspecies = ifelse(subspecies == "C", "Collybita",
+                                           ifelse(subspecies == "A", "Abietinus", "Trisits")))
+
+## create the plot with significance bars
+ggplot(data = ChiffBoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) + 
+  geom_boxplot() +
+  geom_signif(comparisons = list(c("Collybita", "Trisits")), map_signif_level = TRUE, colour = "black") +
+  geom_signif(comparisons = list(c("Abietinus", "Trisits")), map_signif_level = TRUE, colour = "black", y_position = -35) +
+  theme_light() +
+  scale_fill_manual(values=c("#009E73", "#0072B2", "#D55E00")) +
+  ylab("δ2H") + xlab("Species Group") +
+  theme(legend.position = "blank", axis.text=element_text(size=13), axis.title=element_text(size=15))
+  
 
 
 ##-------------------------------------------------##
