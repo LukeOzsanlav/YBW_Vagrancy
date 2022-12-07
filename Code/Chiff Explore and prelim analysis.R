@@ -109,7 +109,7 @@ ggplot(data = Iso) +
 
 ## lets select some variables that I'm interested in that could be continuous predictors
 CorVars <- Iso %>% 
-           dplyr::select(wp, tars, tail, wing, weight, fat, Cap_yday) %>% #condition
+           dplyr::select(wp, tars, tail, wing, weight, fat, Cap_yday, condition) %>% #condition
            drop_na()
 
 cor(CorVars) # get matrix of correlation scores for the variables
@@ -129,13 +129,14 @@ cor(CorVars) # get matrix of correlation scores for the variables
 Iso$subspecies <- as.factor(Iso$subspecies)
 
 ## run a linear model and then
+## all but one of these test is significantly different
 anova(lm(Iso$wp~ Iso$subspecies))
 anova(lm(Iso$tars~ Iso$subspecies))
 anova(lm(Iso$tail~ Iso$subspecies))
 anova(lm(Iso$wing~ Iso$subspecies))
 anova(lm(Iso$weight~ Iso$subspecies))
-anova(lm(Iso$fat~ Iso$subspecies))      # **Significant: fat*Subspecies
-anova(lm(Iso$Cap_yday~ Iso$subspecies)) # **Significant: Capture Day*sub-species
+anova(lm(Iso$fat~ Iso$subspecies))       
+anova(lm(Iso$Cap_yday~ Iso$subspecies)) 
 
 
 
@@ -202,8 +203,8 @@ ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) +
         axis.text.x = element_text(face = "italic"), axis.title=element_text(size=15))
 
 ## save the plot
-ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png", 
-       width = 14, height = 12, units = "cm")
+# ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png", 
+#        width = 14, height = 12, units = "cm")
   
 
 
@@ -215,18 +216,16 @@ ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
 ## Model how hydrogen isotopes vary with arrival date, wing length, wing pointedness and mass
 ## Will need to run a model for each of these sub-species individually, due to differences in arrival date between groups
 
-
 ## First work out how much data is missing for each of these variables
 ## There 16 NA values by
 ## 5 NAs for weight but all in Collybita
 ## 4 NAs in wing but all in Collybita
-## 16 NAs in poitedness across all chiff sub-species, then 12 NAs for YBW (don't think Jake recorded this in all birds, says it was only done in 2/3rds of birds in his thesis)
-Iso %>% dplyr::select(Cap_yday, wing, pointedness, weight) %>% group_by() %>% summary()
-
+## 16 NAs in pointedness across all chiff sub-species, then 12 NAs for YBW (don't think Jake recorded this in all birds, says it was only done in 2/3rds of birds in his thesis)
+## 4 NAs in condition with 3 in Collybita and 1 yellow brow
+Iso %>% dplyr::select(Cap_yday, wing, pointedness, weight, condition) %>% group_by() %>% summary()
 
 ## re-level the subspecies factor (NOT NEEDED CURRENTLY)
 # ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
-
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
@@ -236,9 +235,10 @@ Tris <- Iso %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, weight)
 Yellow <- Iso %>% filter(subspecies == "YBW") %>% drop_na(wing, Cap_yday, weight, isotope)
 
 
-## **MODEL: Collybita ##
+
+#### 5.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
-ModColl <- gls(isotope ~ wing + Cap_yday + weight,
+ModColl <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Coll, 
                method="ML")
 
@@ -251,10 +251,44 @@ ModColleffects <- predictorEffects(ModColl)
 plot(ModColleffects)
 
 
+## plot of Collybita relationship
+## use the effects package to extract the fit for the first variable
+divisions <- 200
+CollWing <- predictorEffects(ModColl, focal.levels = divisions)
+plot(CollWing[1])
+effectsColl <- CollWing[1]
+fitColl <- as.data.frame(cbind(effectsColl[["wing"]][["fit"]], effectsColl[["wing"]][["lower"]], 
+                                 effectsColl[["wing"]][["upper"]], effectsColl[["wing"]][["x"]]))
 
-## **MODEL: Abietinus ##
+## change the names to something meaningful
+setnames(fitColl, old = c("effectsColl[[\"wing\"]][[\"fit\"]]", "effectsColl[[\"wing\"]][[\"lower\"]]", "effectsColl[[\"wing\"]][[\"upper\"]]"), 
+         new = c("fit", "lower", "upper"))
+
+## Now plot using ggplot
+ggplot(mapping= aes(x= wing, y = fit)) + 
+  geom_point(data= Coll, mapping= aes(x= wing, y = isotope), colour = "#882255", shape = 1, stroke = 1.5) +
+  geom_ribbon(data = fitColl, mapping =aes(x= wing, ymin = lower, ymax = upper), 
+              alpha = 0.4, colour = NA, fill = "grey")+
+  geom_line(data= fitColl, size = 1.25)  +
+  xlab("Wing Length/mm") + ylab("Delta H2") +
+  theme_bw() +
+  theme(panel.grid.minor.y = element_blank(),
+        axis.title=element_text(size=18),
+        axis.text=element_text(size=14),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14),
+        panel.grid.minor.x = element_blank(), 
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_blank())
+
+ggsave("Outputs/Collybita winglength vs H2.png",
+       width = 18, height = 16, units = "cm")
+
+
+
+#### 5.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
-ModAbie <- gls(isotope ~ wing + Cap_yday + weight,
+ModAbie <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Abie, 
                method="ML")
 
@@ -268,9 +302,9 @@ plot(ModAbieeffects)
 
 
 
-## **MODEL: Tristis ##
+#### 5.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
-ModTris <- gls(isotope ~ wing + Cap_yday + weight,
+ModTris <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Tris, 
                method="ML")
 
@@ -283,9 +317,10 @@ ModTriseffects <- predictorEffects(ModTris)
 plot(ModTriseffects)
 
 
-## **MODEL: Yellow-Brow ##
+
+#### 5.4 MODEL: Yellow-Brow ####
 ## Add interactions between the sub species and the other explanatory variables
-ModYBW <- gls(isotope ~ wing + Cap_yday + weight,
+ModYBW <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Yellow, 
                method="ML")
 
@@ -297,11 +332,45 @@ anova(ModYBW)
 ModYBWeffects <- predictorEffects(ModYBW)
 plot(ModYBWeffects)
 
+## plot of Collybita relationship
+## use the effects package to extract the fit for the first variable
+divisions <- 200
+YBWWing <- predictorEffects(ModYBW, focal.levels = divisions)
+plot(YBWWing[1])
+effectsYBW <- YBWWing[1]
+fitYBW <- as.data.frame(cbind(effectsYBW[["wing"]][["fit"]], effectsYBW[["wing"]][["lower"]], 
+                               effectsYBW[["wing"]][["upper"]], effectsYBW[["wing"]][["x"]]))
+
+## change the names to something meaningful
+setnames(fitYBW, old = c("effectsYBW[[\"wing\"]][[\"fit\"]]", "effectsYBW[[\"wing\"]][[\"lower\"]]", "effectsYBW[[\"wing\"]][[\"upper\"]]"), 
+         new = c("fit", "lower", "upper"))
+
+## Now plot using ggplot
+ggplot(mapping= aes(x= wing, y = fit)) + 
+  geom_point(data= Yellow, mapping= aes(x= wing, y = isotope), colour = "#117733", shape = 1, stroke = 1.5) +
+  geom_ribbon(data = fitYBW, mapping =aes(x= wing, ymin = lower, ymax = upper), 
+              alpha = 0.4, colour = NA, fill = "grey")+
+  geom_line(data= fitYBW, size = 1.25)  +
+  xlab("Wing Length/mm") + ylab("Delta H2") +
+  theme_bw() +
+  theme(panel.grid.minor.y = element_blank(),
+        axis.title=element_text(size=18),
+        axis.text=element_text(size=14),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14),
+        panel.grid.minor.x = element_blank(), 
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_blank())
+
+ggsave("Outputs/YBW winglength vs H2.png",
+       width = 18, height = 16, units = "cm")
+
+
 
 
 
 ##---------------------------------------------##
-#### 5. Arrival date vs Subspecies variables ####
+#### 6. Arrival date vs Subspecies variables ####
 ##---------------------------------------------##
 
 ## Model how capture date it related to various sub-species variables
@@ -327,9 +396,10 @@ Tris2 <- Iso %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, cond
 YBW2 <- Iso %>% filter(subspecies == "YBW") %>% drop_na(Cap_yday, wing, fat, condition, isotope)
 
 
-## **MODEL: Collybita ##
+
+#### 6.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
-ModColl2 <- gls(Cap_yday ~ wing + isotope + condition,
+ModColl2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Coll2, 
                 method="ML")
 
@@ -341,11 +411,45 @@ anova(ModColl2)
 ModColl2effects <- predictorEffects(ModColl2)
 plot(ModColl2effects)
 
+## plot of Collybita relationship
+## use the effects package to extract the fit for the first variable
+divisions <- 200
+CollWing <- predictorEffects(ModColl2, focal.levels = divisions)
+plot(CollWing[2])
+effectsColl <- CollWing[2]
+fitColl <- as.data.frame(cbind(effectsColl[["condition"]][["fit"]], effectsColl[["condition"]][["lower"]], 
+                               effectsColl[["condition"]][["upper"]], effectsColl[["condition"]][["x"]]))
+
+## change the names to something meaningful
+setnames(fitColl, old = c("effectsColl[[\"condition\"]][[\"fit\"]]", "effectsColl[[\"condition\"]][[\"lower\"]]", "effectsColl[[\"condition\"]][[\"upper\"]]"), 
+         new = c("fit", "lower", "upper"))
+
+## Now plot using ggplot
+ggplot(mapping= aes(x= condition, y = fit)) + 
+  geom_point(data= Coll2, mapping= aes(x= condition, y = Cap_yday), colour = "#882255", shape = 1, stroke = 1.5) +
+  geom_ribbon(data = fitColl, mapping =aes(x= condition, ymin = lower, ymax = upper), 
+              alpha = 0.4, colour = NA, fill = "grey")+
+  geom_line(data= fitColl, size = 1.25)  +
+  xlab("Body Condition") + ylab("Arrival Date/day of year") +
+  theme_bw() +
+  theme(panel.grid.minor.y = element_blank(),
+        axis.title=element_text(size=18),
+        axis.text=element_text(size=14),
+        legend.text=element_text(size=14),
+        legend.title=element_text(size=14),
+        panel.grid.minor.x = element_blank(), 
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_blank())
+
+ggsave("Outputs/Collybita condition vs arrival date.png",
+       width = 18, height = 16, units = "cm")
 
 
-## **MODEL: Abietinus ##
+
+
+#### 6.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
-ModAbie2 <- gls(Cap_yday ~ wing + isotope + condition,
+ModAbie2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Abie2, 
                 method="ML")
 
@@ -359,9 +463,9 @@ plot(ModAbie2effects)
 
 
 
-## **MODEL: Tristis ##
+#### 6.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
-ModTris2 <- gls(Cap_yday ~ wing + isotope + condition,
+ModTris2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Tris2, 
                 method="ML")
 
@@ -374,9 +478,10 @@ ModTris2effects <- predictorEffects(ModTris2)
 plot(ModTris2effects)
 
 
-## **MODEL: Yellow_brow ##
+
+#### 6.4 MODEL: Yellow_brow ####
 ## Add interactions between the sub species and the other explanatory variables
-ModYBW2 <- gls(Cap_yday ~ wing + isotope + condition,
+ModYBW2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                data=YBW2, 
                method="ML")
 
@@ -387,3 +492,5 @@ anova(ModYBW2)
 # plot the predictor effects
 ModYBW2effects <- predictorEffects(ModYBW2)
 plot(ModYBW2effects)
+
+
