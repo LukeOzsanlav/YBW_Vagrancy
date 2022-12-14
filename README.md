@@ -10,8 +10,8 @@ Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe 
 Current models run in `Chiff Explore and prelim analysis.R` and to be included in MS
 ```{r]
 H2 ~ species grouping
-H2 ~ wing length + Cpature day + condition
-Cpature day ~ wing length + condition
+H2 ~ wing length + Capture day + condition
+Capture day ~ wing length + condition
 ```
 
 ## Repo Structure
