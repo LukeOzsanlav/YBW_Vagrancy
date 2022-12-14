@@ -174,6 +174,7 @@ anova(mod1, mod)
 ## Get summary of the model with the weight
 ## Seems like all the groups are different but Tristis is a lot lower
 summary(mod1)
+anova(mod1)
 
 ## plot the model effects
 mod1effects <- predictorEffects(mod1)
@@ -188,9 +189,15 @@ BoxPlot <- Iso %>%
                                            ifelse(subspecies == "A", "P. c. abietinus", 
                                                   ifelse(subspecies == "T", "P. c. trisits", "P. inornatus"))))
 
+IsoModBox <- IsoMod1 %>%                              
+              mutate(subspecies = ifelse(subspecies == "C", "P. c. collybita",
+                                         ifelse(subspecies == "A", "P. c. abietinus", 
+                                                ifelse(subspecies == "T", "P. c. trisits", "P. inornatus"))))
+
 ## create the plot with significance bars
 ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) + 
-  geom_boxplot() +
+  geom_jitter(data = IsoModBox, aes(y = isotope, x = subspecies), stroke = 1, alpha = 0.5, colour = "darkgrey", width = 0.1) +
+  geom_boxplot(alpha = 0.5, width = 0.4) +
   geom_signif(comparisons = list(c("P. c. collybita", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -40) +
   geom_signif(comparisons = list(c("P. c. abietinus", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -35) +
   geom_signif(comparisons = list(c("P. c. abietinus", "P. inornatus")), map_signif_level = TRUE, colour = "black", y_position = -30) +
@@ -198,13 +205,13 @@ ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) +
   theme_light() +
   scale_y_continuous(breaks = seq(-140, -20, by = 20)) +
   scale_fill_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733")) +
-  ylab("δ2H") + xlab("Species Group") +
+  ylab("δD") + xlab("Taxonmic Group") +
   theme(legend.position = "blank", axis.text=element_text(size=13), panel.grid.minor = element_blank(),
-        axis.text.x = element_text(face = "italic"), axis.title=element_text(size=15))
+        axis.text.x = element_text(face = "italic"), axis.title=element_text(size=15), panel.grid.major.x = element_blank())
 
 ## save the plot
-# ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png", 
-#        width = 14, height = 12, units = "cm")
+ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
+       width = 14, height = 14, units = "cm")
   
 
 
