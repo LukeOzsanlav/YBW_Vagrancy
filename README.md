@@ -7,6 +7,7 @@ Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe 
 - Liam Langley
 
 ## Models
+Current models run in `Chiff Explore and prelim analysis.R` and to be included in MS
 ```{r]
 H2 ~ species grouping
 H2 ~ wing length + Cpature day + condition
