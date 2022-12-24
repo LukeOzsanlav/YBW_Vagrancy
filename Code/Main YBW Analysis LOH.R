@@ -22,7 +22,7 @@
 
 
 ## packages required
-pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif, car)
+pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif, car, outliers)
 
 
 
@@ -219,6 +219,12 @@ ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
 ##----------------------------------##
 #### 5. Hydrogen Isotope variance ####
 ##----------------------------------##  
+
+## Identify any potential outliers
+Aeb <- IsoMod1 %>% filter(subspecies == "A"); grubbs.test(Aeb$isotope, opposite = TRUE); grubbs.test(Aeb$isotope, opposite = FALSE)
+Tris <- IsoMod1 %>% filter(subspecies == "T"); grubbs.test(Tris$isotope, opposite = TRUE); grubbs.test(Tris$isotope, opposite = FALSE)
+Col <- IsoMod1 %>% filter(subspecies == "C"); grubbs.test(Col$isotope, opposite = TRUE); grubbs.test(Col$isotope, opposite = FALSE)
+YBW <- IsoMod1 %>% filter(subspecies == "YBW"); grubbs.test(YBW$isotope, opposite = TRUE); grubbs.test(YBW$isotope, opposite = FALSE)
 
 ## three tests for homogenity of variance between groups, none significant but need post hoc tests
 leveneTest(lm(isotope~ subspecies, data= IsoMod1))
