@@ -22,7 +22,7 @@
 
 
 ## packages required
-pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif)
+pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif, car)
 
 
 
@@ -212,13 +212,54 @@ ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) +
 ## save the plot
 ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
        width = 14, height = 14, units = "cm")
-  
 
 
 
-##-------------------------------------------------##
-#### 5. Hydrogen Isotope vs Subspecies variables ####
-##-------------------------------------------------##
+
+##----------------------------------##
+#### 5. Hydrogen Isotope variance ####
+##----------------------------------##  
+
+## three tests for homogenity of variance between groups, none significant but need post hoc tests
+leveneTest(lm(isotope~ subspecies, data= IsoMod1))
+bartlett.test(isotope~ subspecies, data= IsoMod1)
+fligner.test(isotope~ subspecies, data= IsoMod1)
+
+## filter the data if needed to remove the outlier
+IsoMod2 <- IsoMod1
+IsoMod2 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
+
+
+## Try just comparing the aubetinus to the other groups
+## Not significant with outlier but significant with outlier removed
+IsoMod3 <- IsoMod2 %>% filter(subspecies == "YBW" | subspecies == "T")
+leveneTest(lm(isotope~ subspecies, data= IsoMod3))
+IsoMod4 <- IsoMod2 %>% filter(subspecies == "YBW" | subspecies == "C")
+leveneTest(lm(isotope~ subspecies, data= IsoMod4))
+IsoMod5 <- IsoMod2 %>% filter(subspecies == "YBW" | subspecies == "A")
+leveneTest(lm(isotope~ subspecies, data= IsoMod5))
+
+
+## use Anova and Tukeys test to do post hoc comparison of variance
+IsoMod2 <- IsoMod2 %>% 
+  group_by(subspecies) %>% 
+  mutate(iso_med = median(isotope, na.rm=TRUE)) %>% 
+  ungroup()
+
+IsoMod2$iso_med_res <- abs(IsoMod2$isotope - IsoMod2$iso_med)
+
+# Then we run an ANOVA, and post-hoc test
+levene.dat.aov <- aov(iso_med_res ~ subspecies, IsoMod2)
+summary(levene.dat.aov)
+TukeyHSD(levene.dat.aov)
+
+
+
+
+
+##------------------------------------------##
+#### 6. Hydrogen Isotope vs Morphometrics ####
+##------------------------------------------##
 
 ## Model how hydrogen isotopes vary with arrival date, wing length, wing pointedness and mass
 ## Will need to run a model for each of these sub-species individually, due to differences in arrival date between groups
@@ -243,7 +284,7 @@ Yellow <- Iso %>% filter(subspecies == "YBW") %>% drop_na(wing, Cap_yday, weight
 
 
 
-#### 5.1 MODEL: Collybita ####
+#### 6.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
 ModColl <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Coll, 
@@ -293,7 +334,7 @@ ggsave("Outputs/Collybita winglength vs H2.png",
 
 
 
-#### 5.2 MODEL: Abietinus ####
+#### 6.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
 ModAbie <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Abie, 
@@ -309,7 +350,7 @@ plot(ModAbieeffects)
 
 
 
-#### 5.3 MODEL: Tristis ####
+#### 6.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
 ModTris <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Tris, 
@@ -325,7 +366,7 @@ plot(ModTriseffects)
 
 
 
-#### 5.4 MODEL: Yellow-Brow ####
+#### 6.4 MODEL: Yellow-Brow ####
 ## Add interactions between the sub species and the other explanatory variables
 ModYBW <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
                data=Yellow, 
@@ -376,9 +417,9 @@ ggsave("Outputs/YBW winglength vs H2.png",
 
 
 
-##---------------------------------------------##
-#### 6. Arrival date vs Subspecies variables ####
-##---------------------------------------------##
+##--------------------------------------##
+#### 7. Arrival date vs Morphometrics ####
+##--------------------------------------##
 
 ## Model how capture date it related to various sub-species variables
 ## Workflow will be the same as the above, modeling the three sub-species separately
@@ -404,7 +445,7 @@ YBW2 <- Iso %>% filter(subspecies == "YBW") %>% drop_na(Cap_yday, wing, fat, con
 
 
 
-#### 6.1 MODEL: Collybita ####
+#### 7.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
 ModColl2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Coll2, 
@@ -454,7 +495,7 @@ ggsave("Outputs/Collybita condition vs arrival date.png",
 
 
 
-#### 6.2 MODEL: Abietinus ####
+#### 7.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
 ModAbie2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Abie2, 
@@ -470,7 +511,7 @@ plot(ModAbie2effects)
 
 
 
-#### 6.3 MODEL: Tristis ####
+#### 7.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
 ModTris2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                 data=Tris2, 
@@ -486,7 +527,7 @@ plot(ModTris2effects)
 
 
 
-#### 6.4 MODEL: Yellow_brow ####
+#### 7.4 MODEL: Yellow_brow ####
 ## Add interactions between the sub species and the other explanatory variables
 ModYBW2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
                data=YBW2, 
