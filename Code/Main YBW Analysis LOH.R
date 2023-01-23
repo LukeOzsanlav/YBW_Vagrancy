@@ -221,7 +221,7 @@ ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) +
   theme_light() +
   scale_y_continuous(breaks = seq(-140, -20, by = 20)) +
   scale_fill_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733")) +
-  ylab("δD") + xlab("Taxonmic Group") +
+  ylab(expression(delta^2*H)) + xlab("Taxonmic Group") +
   theme(legend.position = "blank", axis.text=element_text(size=13), panel.grid.minor = element_blank(),
         axis.text.x = element_text(face = "italic"), axis.title=element_text(size=15), panel.grid.major.x = element_blank())
 
@@ -473,7 +473,7 @@ ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspecies)) 
   geom_ribbon(data = PlotFits, mapping =aes(x= wing, ymin = lower, ymax = upper, group = subspecies, colour = subspecies), 
               alpha = 0.2, colour = NA, fill = "grey") +
   geom_line(data= PlotFits, size = 1.25)  +
-  xlab("Wing Length/mm") + ylab("Delta H2") + labs(colour = "Taxonomic Group") +
+  xlab("Wing Length/mm") + ylab(expression(delta^2*H)) + labs(colour = "Taxonomic Group") +
   scale_colour_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733"), 
                       labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
   theme_bw() +
