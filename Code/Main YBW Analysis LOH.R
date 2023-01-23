@@ -140,21 +140,37 @@ anova(lm(Iso$Cap_yday~ Iso$subspecies))
 
 
 
+##--------------------------##
+#### 4. Test for outliers ####
+##--------------------------##
+
+## Identify any potential outliers
+Aeb <- Iso %>% filter(subspecies == "A"); grubbs.test(Aeb$isotope, opposite = TRUE); grubbs.test(Aeb$isotope, opposite = FALSE)
+Tris <- Iso %>% filter(subspecies == "T"); grubbs.test(Tris$isotope, opposite = TRUE); grubbs.test(Tris$isotope, opposite = FALSE)
+Col <- Iso %>% filter(subspecies == "C"); grubbs.test(Col$isotope, opposite = TRUE); grubbs.test(Col$isotope, opposite = FALSE)
+YBW <- Iso %>% filter(subspecies == "YBW"); grubbs.test(YBW$isotope, opposite = TRUE); grubbs.test(YBW$isotope, opposite = FALSE)
+
+## three tests for homogenity of variance between groups, none significant but need post hoc tests
+leveneTest(lm(isotope~ subspecies, data= Iso))
+bartlett.test(isotope~ subspecies, data= Iso)
+fligner.test(isotope~ subspecies, data= Iso)
+
+
 
 ##----------------------------------------##
-#### 4. Hydrogen Isotope vs Sub-species ####
+#### 5. Hydrogen Isotope vs Sub-species ####
 ##----------------------------------------##
 
 ## Model how hydrogen isotope varies across the different sub-species
 ## Will need to account for heteroscedacisity between groups, Robbie said this was a problem in the thesis
 ## I can control for this so will model all three sub-species at once
 
-
 ## set variables to the correct class
 Iso$subspecies <- as.factor(Iso$subspecies)
 
 ## drop rows with missing data
 IsoMod1 <- Iso %>% drop_na(isotope, subspecies)
+IsoMod1 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
 
 ## Run model in nlme
 ## Weight function allows to account for heteroscad
@@ -220,20 +236,9 @@ ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
 #### 5. Hydrogen Isotope variance ####
 ##----------------------------------##  
 
-## Identify any potential outliers
-Aeb <- IsoMod1 %>% filter(subspecies == "A"); grubbs.test(Aeb$isotope, opposite = TRUE); grubbs.test(Aeb$isotope, opposite = FALSE)
-Tris <- IsoMod1 %>% filter(subspecies == "T"); grubbs.test(Tris$isotope, opposite = TRUE); grubbs.test(Tris$isotope, opposite = FALSE)
-Col <- IsoMod1 %>% filter(subspecies == "C"); grubbs.test(Col$isotope, opposite = TRUE); grubbs.test(Col$isotope, opposite = FALSE)
-YBW <- IsoMod1 %>% filter(subspecies == "YBW"); grubbs.test(YBW$isotope, opposite = TRUE); grubbs.test(YBW$isotope, opposite = FALSE)
-
-## three tests for homogenity of variance between groups, none significant but need post hoc tests
-leveneTest(lm(isotope~ subspecies, data= IsoMod1))
-bartlett.test(isotope~ subspecies, data= IsoMod1)
-fligner.test(isotope~ subspecies, data= IsoMod1)
-
 ## filter the data if needed to remove the outlier
 IsoMod2 <- IsoMod1
-IsoMod2 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
+IsoMod2 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90)) # double check outlier is removed
 
 
 ## Try just comparing the aubetinus to the other groups
@@ -283,6 +288,7 @@ Iso %>% dplyr::select(Cap_yday, wing, pointedness, weight, condition) %>% group_
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
+Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
 Coll <- Iso %>% filter(subspecies == "C") %>% drop_na(wing, Cap_yday, weight)
 Abie <- Iso %>% filter(subspecies == "A") %>% drop_na(wing, Cap_yday, weight)
 Tris <- Iso %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, weight)
@@ -509,6 +515,7 @@ Iso %>% dplyr::select(Cap_yday, wing, fat, condition) %>% group_by() %>% summary
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
+Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
 Coll2 <- Iso %>% filter(subspecies == "C") %>% drop_na(Cap_yday, wing, fat, condition)
 Abie2 <- Iso %>% filter(subspecies == "A") %>% drop_na(Cap_yday, wing, fat, condition)
 Tris2 <- Iso %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, condition)
