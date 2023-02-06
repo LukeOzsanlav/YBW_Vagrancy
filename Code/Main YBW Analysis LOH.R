@@ -1,24 +1,18 @@
 ## Luke Ozsanlav-Harris
 ## Created: 15/11/2022
 
-## Preliminary exploration of the stable isotope, morphometric and phenological data from Chiffchaff
-## Start re-creating some of the analysis carried out by Robbie that could go into a manuscript
+## Analysis of the stable isotope, morphometric and phenological data from Chiffchaff and YBW
+
 
 ## NOTES** 
 ## - there are lots of correlation between variables so modelling needs to be done carefully
 ## - condition that I am currently using is a the residuals or an OLS regression  between wind length and weight
 
-## Model run:
-## 1. Isotope ~ Sub Species Group (all)
-## 2. Isotope ~ wing + Cap_yday + weight (each)
-## 3. Cap_yday ~ wing + isotope + condition (each)
 
-## Results summary:
-## H2 istopes for YBW differ from Coll and Abie but are the same as Tris
-## Wing length and Isotope negatively correlated in collybita but not any other groups
-## Condition and capture day negatively correlated in collybita but not any other groups
-## Suggest that Collybita are arriving from a broad front, i.e. east to west front
-## No suggestion of this in other species suggestive that variation in H2 is due to on north-south front
+## Models run:
+## 1. Isotope ~ Sub Species Group (all)
+## 2. Isotope ~ wing + Cap_yday (each)
+## 3. Cap_yday ~ wing (each)
 
 
 ## packages required
@@ -73,7 +67,6 @@ Iso <- plyr::rbind.fill(Chiff, YBW)
 ggplot() + 
   geom_boxplot(data = Iso, aes(y = isotope, x = subspecies, colour= subspecies)) +
   theme_light()
-
 
 ## Plot the isotopes by arrival date, group by subspecies
 ggplot() +
@@ -140,6 +133,7 @@ anova(lm(Iso$Cap_yday~ Iso$subspecies))
 
 
 
+
 ##--------------------------##
 #### 4. Test for outliers ####
 ##--------------------------##
@@ -151,9 +145,10 @@ Col <- Iso %>% filter(subspecies == "C"); grubbs.test(Col$isotope, opposite = TR
 YBW <- Iso %>% filter(subspecies == "YBW"); grubbs.test(YBW$isotope, opposite = TRUE); grubbs.test(YBW$isotope, opposite = FALSE)
 
 ## three tests for homogenity of variance between groups, none significant but need post hoc tests
-leveneTest(lm(isotope~ subspecies, data= Iso))
-bartlett.test(isotope~ subspecies, data= Iso)
-fligner.test(isotope~ subspecies, data= Iso)
+# leveneTest(lm(isotope~ subspecies, data= Iso))
+# bartlett.test(isotope~ subspecies, data= Iso)
+# fligner.test(isotope~ subspecies, data= Iso)
+
 
 
 
@@ -170,7 +165,10 @@ Iso$subspecies <- as.factor(Iso$subspecies)
 
 ## drop rows with missing data
 IsoMod1 <- Iso %>% drop_na(isotope, subspecies)
+
+## remove the outlier
 IsoMod1 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
+
 
 ## Run model in nlme
 ## Weight function allows to account for heteroscad
@@ -183,18 +181,16 @@ mod <- gls(isotope~ subspecies,
             data=IsoMod1, 
             method="ML")
 
-## comparing the two models, adding the weights argument does not really make that much of a difference
-## It's close though so will keep it in
+## comparing the two models, adding the weights argument makes a difference with the outlier removed so will keep it in for now
 anova(mod1, mod)
 
-## Get summary of the model with the weight
-## Seems like all the groups are different but Tristis is a lot lower
+## Get summary of the model with the weight, seems like all the groups are different but Tristis is a lot lower
 summary(mod1)
 anova(mod1)
 
 ## plot the model effects
 mod1effects <- predictorEffects(mod1)
-plot(mod1effects)
+# plot(mod1effects)
 
 
 
@@ -211,7 +207,7 @@ IsoModBox <- IsoMod1 %>%
                                                 ifelse(subspecies == "T", "P. c. trisits", "P. inornatus"))))
 
 ## create the plot with significance bars
-ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) + 
+bp1 <- ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) + 
   geom_jitter(data = IsoModBox, aes(y = isotope, x = subspecies), stroke = 1, alpha = 0.5, colour = "darkgrey", width = 0.1) +
   geom_boxplot(alpha = 0.5, width = 0.4) +
   geom_signif(comparisons = list(c("P. c. collybita", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -40) +
@@ -221,12 +217,12 @@ ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies)) +
   theme_light() +
   scale_y_continuous(breaks = seq(-140, -20, by = 20)) +
   scale_fill_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733")) +
-  ylab(expression(delta^2*H)) + xlab("Taxonmic Group") +
-  theme(legend.position = "blank", axis.text=element_text(size=13), panel.grid.minor = element_blank(),
-        axis.text.x = element_text(face = "italic"), axis.title=element_text(size=15), panel.grid.major.x = element_blank())
+  ylab(expression(delta^2*H*"  "*("‰"))) + xlab("Taxonmic Group") +
+  theme(legend.position = "blank", axis.text=element_text(size=11), panel.grid.minor = element_blank(),
+        axis.text.x = element_text(face = "italic"), axis.title=element_text(size=13), panel.grid.major.x = element_blank())
 
 ## save the plot
-ggsave("Outputs/BoxPlot- Comparison of H2 between groups.png",
+ggsave(plot = bp1, filename =  "Outputs/BoxPlot- Comparison of H2 between groups.png",
        width = 14, height = 14, units = "cm")
 
 
@@ -251,19 +247,26 @@ IsoMod5 <- IsoMod2 %>% filter(subspecies == "YBW" | subspecies == "A")
 leveneTest(lm(isotope~ subspecies, data= IsoMod5))
 
 
+## **Alternative way** Compare all groups at once which we aren't interested in
 ## use Anova and Tukeys test to do post hoc comparison of variance
-IsoMod2 <- IsoMod2 %>% 
-  group_by(subspecies) %>% 
-  mutate(iso_med = median(isotope, na.rm=TRUE)) %>% 
-  ungroup()
+# IsoMod2 <- IsoMod2 %>% 
+#         group_by(subspecies) %>% 
+#         mutate(iso_med = median(isotope, na.rm=TRUE)) %>% 
+#         ungroup()
+# 
+# IsoMod2$iso_med_res <- abs(IsoMod2$isotope - IsoMod2$iso_med)
+# 
+# # Then we run an ANOVA, and post-hoc test
+# levene.dat.aov <- aov(iso_med_res ~ subspecies, IsoMod2)
+# summary(levene.dat.aov)
+# TukeyHSD(levene.dat.aov)
 
-IsoMod2$iso_med_res <- abs(IsoMod2$isotope - IsoMod2$iso_med)
 
-# Then we run an ANOVA, and post-hoc test
-levene.dat.aov <- aov(iso_med_res ~ subspecies, IsoMod2)
-summary(levene.dat.aov)
-TukeyHSD(levene.dat.aov)
-
+## Make summary of the data
+Data_Sum <- IsoMod2 %>% 
+            group_by(subspecies) %>% 
+            summarise(meaniso = mean(isotope),
+                      sd = sd(isotope))
 
 
 
@@ -283,22 +286,20 @@ TukeyHSD(levene.dat.aov)
 ## 4 NAs in condition with 3 in Collybita and 1 yellow brow
 Iso %>% dplyr::select(Cap_yday, wing, pointedness, weight, condition) %>% group_by() %>% summary()
 
-## re-level the subspecies factor (NOT NEEDED CURRENTLY)
-# ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
 Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
-Coll <- Iso %>% filter(subspecies == "C") %>% drop_na(wing, Cap_yday, weight)
-Abie <- Iso %>% filter(subspecies == "A") %>% drop_na(wing, Cap_yday, weight)
-Tris <- Iso %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, weight)
-Yellow <- Iso %>% filter(subspecies == "YBW") %>% drop_na(wing, Cap_yday, weight, isotope)
+Coll <- Iso %>% filter(subspecies == "C") %>% drop_na(wing, Cap_yday, isotope)
+Abie <- Iso %>% filter(subspecies == "A") %>% drop_na(wing, Cap_yday, isotope)
+Tris <- Iso %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, isotope)
+Yellow <- Iso %>% filter(subspecies == "YBW") %>% drop_na(wing, Cap_yday, isotope)
 
 
 
 #### 6.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
-ModColl <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
+ModColl <- gls(isotope ~ scale(wing) + scale(Cap_yday),
                data=Coll, 
                method="ML")
 
@@ -325,7 +326,7 @@ setnames(fitColl, old = c("effectsColl[[\"wing\"]][[\"fit\"]]", "effectsColl[[\"
          new = c("fit", "lower", "upper"))
 
 ## Now plot using ggplot
-ggplot(mapping= aes(x= wing, y = fit)) + 
+C1 <- ggplot(mapping= aes(x= wing, y = fit)) + 
   geom_point(data= Coll, mapping= aes(x= wing, y = isotope), colour = "#882255", shape = 1, stroke = 1.5) +
   geom_ribbon(data = fitColl, mapping =aes(x= wing, ymin = lower, ymax = upper), 
               alpha = 0.4, colour = NA, fill = "grey")+
@@ -341,15 +342,11 @@ ggplot(mapping= aes(x= wing, y = fit)) +
         panel.grid.major.y = element_blank(),
         panel.grid.major.x = element_blank())
 
-ggsave("Outputs/Collybita winglength vs H2.png",
-       width = 18, height = 16, units = "cm")
-
-
 
 
 #### 6.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
-ModAbie <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
+ModAbie <- gls(isotope ~ scale(wing) + scale(Cap_yday),
                data=Abie, 
                method="ML")
 
@@ -376,10 +373,9 @@ setnames(fitAeb, old = c("effectsAeb[[\"wing\"]][[\"fit\"]]", "effectsAeb[[\"win
 
 
 
-
 #### 6.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
-ModTris <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
+ModTris <- gls(isotope ~ scale(wing) + scale(Cap_yday),
                data=Tris, 
                method="ML")
 
@@ -409,7 +405,7 @@ setnames(fitTris, old = c("effectsTris[[\"wing\"]][[\"fit\"]]", "effectsTris[[\"
 
 #### 6.4 MODEL: Yellow-Brow ####
 ## Add interactions between the sub species and the other explanatory variables
-ModYBW <- gls(isotope ~ scale(wing) + scale(Cap_yday) + scale(condition),
+ModYBW <- gls(isotope ~ scale(wing) + scale(Cap_yday),
                data=Yellow, 
                method="ML")
 
@@ -435,7 +431,7 @@ setnames(fitYBW, old = c("effectsYBW[[\"wing\"]][[\"fit\"]]", "effectsYBW[[\"win
          new = c("fit", "lower", "upper"))
 
 ## Now plot using ggplot
-ggplot(mapping= aes(x= wing, y = fit)) + 
+YB1 <- ggplot(mapping= aes(x= wing, y = fit)) + 
   geom_point(data= Yellow, mapping= aes(x= wing, y = isotope), colour = "#117733", shape = 1, stroke = 1.5) +
   geom_ribbon(data = fitYBW, mapping =aes(x= wing, ymin = lower, ymax = upper), 
               alpha = 0.4, colour = NA, fill = "grey")+
@@ -451,9 +447,6 @@ ggplot(mapping= aes(x= wing, y = fit)) +
         panel.grid.major.y = element_blank(),
         panel.grid.major.x = element_blank())
 
-ggsave("Outputs/YBW winglength vs H2.png",
-       width = 18, height = 16, units = "cm")
-
 
 
 #### 6.5 PLOT: All Groups ####
@@ -468,12 +461,12 @@ fitColl$subspecies <- "C"; fitAeb$subspecies <- "A"
 PlotFits <- rbind(fitYBW, fitTris, fitColl, fitAeb)
 
 ## plot all of the data
-ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspecies)) + 
+GR1 <- ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspecies)) + 
   geom_point(data= PlotWing, mapping= aes(x= wing, y = isotope, group = subspecies, colour = subspecies), shape = 1, stroke = 1.5) +
   geom_ribbon(data = PlotFits, mapping =aes(x= wing, ymin = lower, ymax = upper, group = subspecies, colour = subspecies), 
               alpha = 0.2, colour = NA, fill = "grey") +
   geom_line(data= PlotFits, size = 1.25)  +
-  xlab("Wing Length/mm") + ylab(expression(delta^2*H)) + labs(colour = "Taxonomic Group") +
+  xlab("Wing Length/mm") + ylab(expression(delta^2*H*"  "*("‰"))) + labs(colour = "Taxonomic Group") +
   scale_colour_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733"), 
                       labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
   theme_bw() +
@@ -487,9 +480,9 @@ ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspecies)) 
         panel.grid.major.x = element_blank())
 
 ##save the output for the MS
-ggsave("Outputs/All winglength vs H2.png",
+ggsave(plot = GR1, 
+       filename = "Outputs/All winglength vs H2.png",
        width = 22, height = 18, units = "cm")
-
 
 
 
@@ -501,7 +494,6 @@ ggsave("Outputs/All winglength vs H2.png",
 ## Model how capture date it related to various sub-species variables
 ## Workflow will be the same as the above, modeling the three sub-species separately
 
-
 ## First work out how much data is missing for each of these variables
 ## There 16 NA values by
 ## 4 NAs in wing but all in Collybita
@@ -509,23 +501,19 @@ ggsave("Outputs/All winglength vs H2.png",
 Iso %>% dplyr::select(Cap_yday, wing, fat, condition) %>% group_by() %>% summary()
 
 
-## re-level the subspecies factor (NOT NEEDED CURRENTLY)
-# ChiffComp$subspecies <- relevel(ChiffComp$subspecies, ref = "C")
-
-
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
 Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
-Coll2 <- Iso %>% filter(subspecies == "C") %>% drop_na(Cap_yday, wing, fat, condition)
-Abie2 <- Iso %>% filter(subspecies == "A") %>% drop_na(Cap_yday, wing, fat, condition)
-Tris2 <- Iso %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, condition)
-YBW2 <- Iso %>% filter(subspecies == "YBW") %>% drop_na(Cap_yday, wing, fat, condition, isotope)
+Coll2 <- Iso %>% filter(subspecies == "C") %>% drop_na(Cap_yday, wing, fat, isotope)
+Abie2 <- Iso %>% filter(subspecies == "A") %>% drop_na(Cap_yday, wing, fat, isotope)
+Tris2 <- Iso %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, isotope)
+YBW2 <- Iso %>% filter(subspecies == "YBW") %>% drop_na(Cap_yday, wing, fat, isotope)
 
 
 
 #### 7.1 MODEL: Collybita ####
 ## Add interactions between the sub species and the other explanatory variables
-ModColl2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
+ModColl2 <- gls(Cap_yday ~ scale(wing),
                 data=Coll2, 
                 method="ML")
 
@@ -537,45 +525,42 @@ anova(ModColl2)
 ModColl2effects <- predictorEffects(ModColl2)
 plot(ModColl2effects)
 
-## plot of Collybita relationship
-## use the effects package to extract the fit for the first variable
-divisions <- 200
-CollCond <- predictorEffects(ModColl2, focal.levels = divisions)
-plot(CollCond[2])
-effectsColl2 <- CollCond[2]
-fitColl2 <- as.data.frame(cbind(effectsColl2[["condition"]][["fit"]], effectsColl2[["condition"]][["lower"]], 
-                               effectsColl2[["condition"]][["upper"]], effectsColl2[["condition"]][["x"]]))
-
-## change the names to something meaningful
-setnames(fitColl2, old = c("effectsColl2[[\"condition\"]][[\"fit\"]]", "effectsColl2[[\"condition\"]][[\"lower\"]]", "effectsColl2[[\"condition\"]][[\"upper\"]]"), 
-         new = c("fit", "lower", "upper"))
-
-## Now plot using ggplot
-ggplot(mapping= aes(x= condition, y = fit)) + 
-  geom_point(data= Coll2, mapping= aes(x= condition, y = Cap_yday), colour = "#882255", shape = 1, stroke = 1.5) +
-  geom_ribbon(data = fitColl2, mapping =aes(x= condition, ymin = lower, ymax = upper), 
-              alpha = 0.4, colour = NA, fill = "grey")+
-  geom_line(data= fitColl2, size = 1.25)  +
-  xlab("Body Condition") + ylab("Arrival Date/day of year") +
-  theme_bw() +
-  theme(panel.grid.minor.y = element_blank(),
-        axis.title=element_text(size=18),
-        axis.text=element_text(size=14),
-        legend.text=element_text(size=14),
-        legend.title=element_text(size=14),
-        panel.grid.minor.x = element_blank(), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank())
-
-ggsave("Outputs/Collybita condition vs arrival date.png",
-       width = 18, height = 16, units = "cm")
+# ## plot of Collybita relationship
+# ## use the effects package to extract the fit for the first variable
+# divisions <- 200
+# CollCond <- predictorEffects(ModColl2, focal.levels = divisions)
+# plot(CollCond[2])
+# effectsColl2 <- CollCond[2]
+# fitColl2 <- as.data.frame(cbind(effectsColl2[["condition"]][["fit"]], effectsColl2[["condition"]][["lower"]], 
+#                                effectsColl2[["condition"]][["upper"]], effectsColl2[["condition"]][["x"]]))
+# 
+# ## change the names to something meaningful
+# setnames(fitColl2, old = c("effectsColl2[[\"condition\"]][[\"fit\"]]", "effectsColl2[[\"condition\"]][[\"lower\"]]", "effectsColl2[[\"condition\"]][[\"upper\"]]"), 
+#          new = c("fit", "lower", "upper"))
+# 
+# ## Now plot using ggplot
+# C2 <- ggplot(mapping= aes(x= condition, y = fit)) + 
+#   geom_point(data= Coll2, mapping= aes(x= condition, y = Cap_yday), colour = "#882255", shape = 1, stroke = 1.5) +
+#   geom_ribbon(data = fitColl2, mapping =aes(x= condition, ymin = lower, ymax = upper), 
+#               alpha = 0.4, colour = NA, fill = "grey")+
+#   geom_line(data= fitColl2, size = 1.25)  +
+#   xlab("Body Condition") + ylab("Arrival Date/day of year") +
+#   theme_bw() +
+#   theme(panel.grid.minor.y = element_blank(),
+#         axis.title=element_text(size=18),
+#         axis.text=element_text(size=14),
+#         legend.text=element_text(size=14),
+#         legend.title=element_text(size=14),
+#         panel.grid.minor.x = element_blank(), 
+#         panel.grid.major.y = element_blank(),
+#         panel.grid.major.x = element_blank())
 
 
 
 
 #### 7.2 MODEL: Abietinus ####
 ## Add interactions between the sub species and the other explanatory variables
-ModAbie2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
+ModAbie2 <- gls(Cap_yday ~ scale(wing),
                 data=Abie2, 
                 method="ML")
 
@@ -587,25 +572,25 @@ anova(ModAbie2)
 ModAbie2effects <- predictorEffects(ModAbie2)
 plot(ModAbie2effects)
 
-## plot of Abietinus relationship
-## use the effects package to extract the fit for the first variable
-divisions <- 200
-AebCond <- predictorEffects(ModAbie2, focal.levels = divisions)
-plot(AebCond[2])
-effectsAeb2 <- AebCond[2]
-fitAeb2 <- as.data.frame(cbind(effectsAeb2[["condition"]][["fit"]], effectsAeb2[["condition"]][["lower"]], 
-                                effectsAeb2[["condition"]][["upper"]], effectsAeb2[["condition"]][["x"]]))
-
-## change the names to something meaningful
-setnames(fitAeb2, old = c("effectsAeb2[[\"condition\"]][[\"fit\"]]", "effectsAeb2[[\"condition\"]][[\"lower\"]]", "effectsAeb2[[\"condition\"]][[\"upper\"]]"), 
-         new = c("fit", "lower", "upper"))
+# ## plot of Abietinus relationship
+# ## use the effects package to extract the fit for the first variable
+# divisions <- 200
+# AebCond <- predictorEffects(ModAbie2, focal.levels = divisions)
+# plot(AebCond[2])
+# effectsAeb2 <- AebCond[2]
+# fitAeb2 <- as.data.frame(cbind(effectsAeb2[["condition"]][["fit"]], effectsAeb2[["condition"]][["lower"]], 
+#                                 effectsAeb2[["condition"]][["upper"]], effectsAeb2[["condition"]][["x"]]))
+# 
+# ## change the names to something meaningful
+# setnames(fitAeb2, old = c("effectsAeb2[[\"condition\"]][[\"fit\"]]", "effectsAeb2[[\"condition\"]][[\"lower\"]]", "effectsAeb2[[\"condition\"]][[\"upper\"]]"), 
+#          new = c("fit", "lower", "upper"))
 
 
 
 
 #### 7.3 MODEL: Tristis ####
 ## Add interactions between the sub species and the other explanatory variables
-ModTris2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
+ModTris2 <- gls(Cap_yday ~ scale(wing),
                 data=Tris2, 
                 method="ML")
 
@@ -617,25 +602,25 @@ anova(ModTris2)
 ModTris2effects <- predictorEffects(ModTris2)
 plot(ModTris2effects)
 
-## plot of Tristis relationship
-## use the effects package to extract the fit for the first variable
-divisions <- 200
-TrisCond <- predictorEffects(ModTris2, focal.levels = divisions)
-plot(TrisCond[2])
-effectsTris2 <- TrisCond[2]
-fitTris2 <- as.data.frame(cbind(effectsTris2[["condition"]][["fit"]], effectsTris2[["condition"]][["lower"]], 
-                               effectsTris2[["condition"]][["upper"]], effectsTris2[["condition"]][["x"]]))
-
-## change the names to something meaningful
-setnames(fitTris2, old = c("effectsTris2[[\"condition\"]][[\"fit\"]]", "effectsTris2[[\"condition\"]][[\"lower\"]]", "effectsTris2[[\"condition\"]][[\"upper\"]]"), 
-         new = c("fit", "lower", "upper"))
+# ## plot of Tristis relationship
+# ## use the effects package to extract the fit for the first variable
+# divisions <- 200
+# TrisCond <- predictorEffects(ModTris2, focal.levels = divisions)
+# plot(TrisCond[2])
+# effectsTris2 <- TrisCond[2]
+# fitTris2 <- as.data.frame(cbind(effectsTris2[["condition"]][["fit"]], effectsTris2[["condition"]][["lower"]], 
+#                                effectsTris2[["condition"]][["upper"]], effectsTris2[["condition"]][["x"]]))
+# 
+# ## change the names to something meaningful
+# setnames(fitTris2, old = c("effectsTris2[[\"condition\"]][[\"fit\"]]", "effectsTris2[[\"condition\"]][[\"lower\"]]", "effectsTris2[[\"condition\"]][[\"upper\"]]"), 
+#          new = c("fit", "lower", "upper"))
 
 
 
 
 #### 7.4 MODEL: Yellow_brow ####
 ## Add interactions between the sub species and the other explanatory variables
-ModYBW2 <- gls(Cap_yday ~ scale(wing) + scale(condition),
+ModYBW2 <- gls(Cap_yday ~ scale(wing),
                data=YBW2, 
                method="ML")
 
@@ -647,53 +632,54 @@ anova(ModYBW2)
 ModYBW2effects <- predictorEffects(ModYBW2)
 plot(ModYBW2effects)
 
-## plot of Yellow_brow relationship
-## use the effects package to extract the fit for the first variable
-divisions <- 200
-YBWCond <- predictorEffects(ModYBW2, focal.levels = divisions)
-plot(YBWCond[2])
-effectsYBW2 <- YBWCond[2]
-fitYBW2 <- as.data.frame(cbind(effectsYBW2[["condition"]][["fit"]], effectsYBW2[["condition"]][["lower"]], 
-                                effectsYBW2[["condition"]][["upper"]], effectsYBW2[["condition"]][["x"]]))
+# ## plot of Yellow_brow relationship
+# ## use the effects package to extract the fit for the first variable
+# divisions <- 200
+# YBWCond <- predictorEffects(ModYBW2, focal.levels = divisions)
+# plot(YBWCond[2])
+# effectsYBW2 <- YBWCond[2]
+# fitYBW2 <- as.data.frame(cbind(effectsYBW2[["condition"]][["fit"]], effectsYBW2[["condition"]][["lower"]], 
+#                                 effectsYBW2[["condition"]][["upper"]], effectsYBW2[["condition"]][["x"]]))
+# 
+# ## change the names to something meaningful
+# setnames(fitYBW2, old = c("effectsYBW2[[\"condition\"]][[\"fit\"]]", "effectsYBW2[[\"condition\"]][[\"lower\"]]", "effectsYBW2[[\"condition\"]][[\"upper\"]]"), 
+#          new = c("fit", "lower", "upper"))
 
-## change the names to something meaningful
-setnames(fitYBW2, old = c("effectsYBW2[[\"condition\"]][[\"fit\"]]", "effectsYBW2[[\"condition\"]][[\"lower\"]]", "effectsYBW2[[\"condition\"]][[\"upper\"]]"), 
-         new = c("fit", "lower", "upper"))
 
 
-
-#### 7.5 PLOT: All Groups ####
-
-## Bind the data used in the models
-PlotCond <- rbind(Coll2, YBW2, Tris2, Abie2)
-
-## bind the model effects data 
-fitYBW2$subspecies <- "YBW"; fitTris2$subspecies <- "T"
-fitColl2$subspecies <- "C"; fitAeb2$subspecies <- "A"
-PlotFits2 <- rbind(fitYBW2, fitTris2, fitColl2, fitAeb2)
-
-## plot all of the data
-ggplot(mapping= aes(x= condition, y = fit, group = subspecies, colour = subspecies)) + 
-  geom_point(data= PlotCond, mapping= aes(x= condition, y = Cap_yday, group = subspecies, colour = subspecies), shape = 1, stroke = 1.5) +
-  geom_ribbon(data = PlotFits2, mapping =aes(x= condition, ymin = lower, ymax = upper, group = subspecies, colour = subspecies), 
-              alpha = 0.2, colour = NA, fill = "grey") +
-  geom_line(data= PlotFits2, size = 1.25)  +
-  xlab("Body Condition/scaled mass index") + ylab("Capture year day") + labs(colour = "Taxonomic Group") +
-  scale_colour_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733"), 
-                      labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
-  theme_bw() +
-  theme(panel.grid.minor.y = element_blank(),
-        axis.title=element_text(size=18),
-        axis.text=element_text(size=14),
-        legend.text=element_text(size=14, face="italic"),
-        legend.title=element_text(size=14),
-        panel.grid.minor.x = element_blank(), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank())
-
-##save the output for the MS
-ggsave("Outputs/All CapYday vs cond.png",
-       width = 22, height = 18, units = "cm")
+# #### 7.5 PLOT: All Groups ####
+# 
+# ## Bind the data used in the models
+# PlotCond <- rbind(Coll2, YBW2, Tris2, Abie2)
+# 
+# ## bind the model effects data 
+# fitYBW2$subspecies <- "YBW"; fitTris2$subspecies <- "T"
+# fitColl2$subspecies <- "C"; fitAeb2$subspecies <- "A"
+# PlotFits2 <- rbind(fitYBW2, fitTris2, fitColl2, fitAeb2)
+# 
+# ## plot all of the data
+# Gr2 <- ggplot(mapping= aes(x= condition, y = fit, group = subspecies, colour = subspecies)) + 
+#   geom_point(data= PlotCond, mapping= aes(x= condition, y = Cap_yday, group = subspecies, colour = subspecies), shape = 1, stroke = 1.5) +
+#   geom_ribbon(data = PlotFits2, mapping =aes(x= condition, ymin = lower, ymax = upper, group = subspecies, colour = subspecies), 
+#               alpha = 0.2, colour = NA, fill = "grey") +
+#   geom_line(data= PlotFits2, size = 1.25)  +
+#   xlab("Body Condition/scaled mass index") + ylab("Capture year day") + labs(colour = "Taxonomic Group") +
+#   scale_colour_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733"), 
+#                       labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
+#   theme_bw() +
+#   theme(panel.grid.minor.y = element_blank(),
+#         axis.title=element_text(size=18),
+#         axis.text=element_text(size=14),
+#         legend.text=element_text(size=14, face="italic"),
+#         legend.title=element_text(size=14),
+#         panel.grid.minor.x = element_blank(), 
+#         panel.grid.major.y = element_blank(),
+#         panel.grid.major.x = element_blank())
+# 
+# ##save the output for the MS
+# ggsave(plot = Gr2, 
+#        filename = "Outputs/All CapYday vs cond.png",
+#        width = 22, height = 18, units = "cm")
 
 
 

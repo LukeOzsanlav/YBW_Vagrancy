@@ -4,7 +4,8 @@
 ## Create range map of YBW and Chiffchaffs for manuscript
 
 ## Packages reuqired
-pacman::p_load(tidyverse, data.table, sf, raster, rnaturalearth, MetBrewer, ggspatial, marmap, ggnewscale)
+pacman::p_load(tidyverse, data.table, sf, raster, rnaturalearth, 
+               ggspatial, marmap, ggnewscale, cowplot)
 
 
 
@@ -66,6 +67,11 @@ plot(eB2)
 
 ## re p[orject raster to the same as the ebird data]
 eB2 <- projectRaster(eB2, crs = crs(BL))
+
+
+## Read in the global prcip dataset
+Precip <- raster("Spatial/Global_precip/d2h_GS.tif")
+plot(Precip)
 
 
 
@@ -257,6 +263,12 @@ m3 <- ggplot() +
 
 m3
 
+## Save the map
+ggsave(plot = m3, 
+       filename = "Outputs/YBW_vag_EuropeOnly.png",
+       units = "mm", width = 200, height = 175, dpi = 300,   
+)
+
 
 
 ## Now pot the map
@@ -299,3 +311,26 @@ m4 <- ggplot() +
         legend.box="vertical", axis.title = element_blank())
 
 m4
+
+
+## Save the map
+ggsave(plot = m4, 
+       filename = "Outputs/YBW_vag_AsiaOnly.png",
+       units = "mm", width = 200, height = 175, dpi = 300,   
+)
+
+
+## Combine the two plots
+## Sort out legend: https://wilkelab.org/cowplot/articles/shared_legends.html
+Pt <- ggdraw() +
+  draw_plot(m3, x = 0, y = 0, width = 0.5, height = 1) +
+  draw_plot(m4, x = .5, y = 0, width = 0.5, height = 1) +
+  draw_plot_label(label = c("A", "B"), size = 15,
+                  x = c(0, 0.5), y = c(1, 1))
+
+## save the combined plot
+ggsave(plot = Pt, 
+       filename = "Outputs/YBW_vag_SplitPlot.png",
+       units = "mm", width = 200, height = 175, dpi = 300,   
+)
+

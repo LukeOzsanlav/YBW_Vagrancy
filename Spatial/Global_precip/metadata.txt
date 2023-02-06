@@ -1,0 +1,13 @@
+Maps of H and O isotope ratios for amount-weighted growing season precipitation across the globe at 5 arc-minute resolution. Growing season is defined here as months with a mean surface air temperature >0 degrees C. These files are based on the methods of Bowen et. al (2005). Please cite the source if you reuse this data product.
+
+Format: GeoTIFF
+Spatial extent: Global land surface
+Spatial resolution: 5' x 5'
+Temporal extent: Climatological, monthly or annual average (preciptation amount-weighted)
+Projection: WGS84 unprojected
+Layers:
+*d2h_GS: Mean predicted growing season d2H values
+*d2h_se_GS: Standard error of the mean predicted growing season d2H values
+*d18o_GS: Mean predicted growing season d18O values
+*d18o_se_GS: Standard error of the mean predicted growing season d18O values
+Source: Bowen, G. J., Wassenaar, L. I., & Hobson, K. A. (2005). Global application of stable hydrogen and oxygen isotopes to wildlife forensics. Oecologia, 143(3), 337-348.
