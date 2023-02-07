@@ -216,7 +216,7 @@ bp1 <- ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies
   geom_signif(comparisons = list(c("P. c. collybita", "P. inornatus")), map_signif_level = TRUE, colour = "black", y_position = -25) +
   theme_light() +
   scale_y_continuous(breaks = seq(-140, -20, by = 20)) +
-  scale_fill_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733")) +
+  scale_fill_manual(values=c("#882255", "#6f9969", "#efc86e", "#808fe1")) +
   ylab(expression(delta^2*H*"  "*("‰"))) + xlab("Taxonmic Group") +
   theme(legend.position = "blank", axis.text=element_text(size=11), panel.grid.minor = element_blank(),
         axis.text.x = element_text(face = "italic"), axis.title=element_text(size=13), panel.grid.major.x = element_blank())
@@ -224,7 +224,6 @@ bp1 <- ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies
 ## save the plot
 ggsave(plot = bp1, filename =  "Outputs/BoxPlot- Comparison of H2 between groups.png",
        width = 14, height = 14, units = "cm")
-
 
 
 
@@ -467,7 +466,7 @@ GR1 <- ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspe
               alpha = 0.2, colour = NA, fill = "grey") +
   geom_line(data= PlotFits, size = 1.25)  +
   xlab("Wing Length/mm") + ylab(expression(delta^2*H*"  "*("‰"))) + labs(colour = "Taxonomic Group") +
-  scale_colour_manual(values=c("#DDCC77", "#882255", "#88CCEE", "#117733"), 
+  scale_colour_manual(values=c("#882255", "#6f9969", "#efc86e", "#808fe1"), 
                       labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
   theme_bw() +
   theme(panel.grid.minor.y = element_blank(),
