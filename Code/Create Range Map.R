@@ -4,8 +4,8 @@
 ## Create range map of YBW and Chiffchaffs for manuscript
 
 ## Packages reuqired
-pacman::p_load(tidyverse, data.table, sf, raster, rnaturalearth, 
-               ggspatial, marmap, ggnewscale, cowplot, ggpubr)
+pacman::p_load(tidyverse, data.table, sf, raster, rnaturalearth, patchwork,
+               ggspatial, marmap, ggnewscale, cowplot, ggpubr, png)
 
 
 
@@ -258,7 +258,7 @@ m3 <- ggplot() +
   # Render the eBird map
   geom_raster(data = eB2_df, aes(x=x, y=y, fill=z)) +
   scale_fill_viridis_c(option="viridis", begin = 0,
-                       end = 1, name = "eBird post-breeding density (12 Oct - 7 Dec)") +
+                       end = 1, name = "eBird density (12 Oct - 7 Dec)") +
   new_scale_fill() +
   
   # add the range areas
@@ -356,11 +356,27 @@ m4 <- ggplot() +
 # m4
 
 
+
+## Add YBW pic ##
+
+## Now read in the YBW image
+YB_im <- readPNG("YBW_pic2.png", native = TRUE)
+
+m3_2 <- ggplot()+                  # Combine plot & image
+  inset_element(p = YB_im,
+                left = 0,
+                bottom = 0,
+                right = 1,
+                top = 1) + theme_light()
+
+
+
 ## Combine the two plots
 ## Sort out legend: https://wilkelab.org/cowplot/articles/shared_legends.html
 Pt <- ggdraw() +
-  draw_plot(m3, x = 0, y = 0, width = 0.5, height = 1) +
-  draw_plot(m4, x = 0.5, y = 0.11, width = 0.5, height = 0.8) +
+  draw_plot(m3, x = 0, y = 0, width = 0.5, height = 0.8) +
+  draw_plot(m3_2, x = 0, y = 0.7, width = 0.4, height = 0.3) +
+  draw_plot(m4, x = 0.5, y = 0.11, width = 0.5, height = 0.9) +
   draw_plot_label(label = c("A", "B"), size = 15,
                   x = c(0, 0.5), y = c(1, 1))
 
