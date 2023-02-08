@@ -119,12 +119,15 @@ m <- ggplot() +
   new_scale_fill() +
   
   # add the range areas
-  geom_sf(data = Col, aes(geometry = geometry, fill = "#6f9969"), colour = NA, alpha = 0.9) +
-  geom_sf(data = YB, aes(geometry = geometry, fill = "#808fe1"), colour = NA, alpha = 0.9) +
-  geom_sf(data = Tris, aes(geometry = geometry, fill = "#efc86e"), colour = NA, alpha = 0.6) +
+  geom_sf(data = Col, aes(geometry = geometry, fill = "#6f9969"), colour = NA, alpha = 1) +
+  geom_sf(data = YB, aes(geometry = geometry, fill = "#808fe1"), colour = NA, alpha = 1) +
+  geom_sf(data = Tris, aes(geometry = geometry, colour = "#efc86e"), fill = NA, alpha = 1, size = 1) +
   scale_fill_manual(name = expression("Taxonomic Group"*":"),
-                    values =c("#6f9969"="#6f9969","#efc86e"="#efc86e", "#808fe1"="#808fe1"),
-                    labels = c("P. c. collybita", "P. c. trisits", "P. inornatus")) +
+                    values =c("#6f9969"="#6f9969", "#808fe1"="#808fe1"),
+                    labels = c("P. c. collybita      ", "P. inornatus")) +
+  scale_colour_manual(name = "",
+                    values =c("#efc86e"="#efc86e"),
+                    labels = c("P. c. trisits")) +
   
   # add the coastoutline
   #geom_sf(data = countries, aes(geometry = geometry), size = 0.2) +
@@ -140,20 +143,24 @@ m <- ggplot() +
   coord_sf(xlim = c(-20, 180),
            ylim = c(-5, 80), crs = 4326, expand = F) +
   
+  guides(color = guide_legend(order = 0),
+         fill  = guide_legend(order = 1)) +
+  
   # Plot styling
   theme_light() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         legend.text=element_text(size=10, face="italic"), legend.position = "bottom",
         axis.title = element_blank(), legend.title= element_text(size=14, face="bold"),
-        legend.box.background=element_rect(colour = "#BDC3C7"),legend.box.margin=margin(5,5,5,5))
+        legend.box.background=element_rect(colour = "#BDC3C7"),legend.box.margin=margin(1,1,1,1),
+        legend.spacing.x = unit(0.1, "cm"))
   
-# m
+m
 
 
 ## Save the map
 ggsave(plot = m, 
        filename = "Outputs/Range_map_Nobathy.png",
-       units = "mm", width = 200, height = 175, dpi = 300,   
+       units = "mm", width = 200, height = 150, dpi = 300,   
 )
 
 
