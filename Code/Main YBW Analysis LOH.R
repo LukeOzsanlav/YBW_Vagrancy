@@ -461,13 +461,14 @@ PlotFits <- rbind(fitYBW, fitTris, fitColl, fitAeb)
 
 ## plot all of the data
 GR1 <- ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspecies)) + 
-  geom_point(data= PlotWing, mapping= aes(x= wing, y = isotope, group = subspecies, colour = subspecies), shape = 1, stroke = 1.5) +
+  geom_point(data= PlotWing, mapping= aes(x= wing, y = isotope, group = subspecies, colour = subspecies), shape = 1, stroke = 1.5, alpha = 0.5) +
   geom_ribbon(data = PlotFits, mapping =aes(x= wing, ymin = lower, ymax = upper, group = subspecies, colour = subspecies), 
-              alpha = 0.2, colour = NA, fill = "grey") +
+              alpha = 0.3, colour = NA, fill = "grey") +
   geom_line(data= PlotFits, size = 1.25)  +
   xlab("Wing Length/mm") + ylab(expression(delta^2*H*"  "*("‰"))) + labs(colour = "Taxonomic Group") +
   scale_colour_manual(values=c("#882255", "#6f9969", "#efc86e", "#808fe1"), 
                       labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
+  annotate("text", x = 54, y = -59.5, colour = "#6f9969", size = 14, label = "*") +
   theme_bw() +
   theme(panel.grid.minor.y = element_blank(),
         axis.title=element_text(size=18),

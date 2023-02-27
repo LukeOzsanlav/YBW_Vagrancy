@@ -320,7 +320,7 @@ YB_repro <- st_transform(YB, crs = crs(eB2))
 YB_reprocrop <- st_crop(YB_repro, xmin= 7000000, ymin= 0, xmax= 12500000, ymax=8000000)
 
 
-## Now pot the map
+## Now plot the map
 m4 <- ggplot() + 
   
   # add the filled in countries
@@ -367,7 +367,7 @@ m4 <- ggplot() +
 ## Add YBW pic ##
 
 ## Now read in the YBW image
-YB_im <- readPNG("YBW_pic2.png", native = TRUE)
+YB_im <- readPNG("YBW illustration.png", native = TRUE)
 
 m3_2 <- ggplot()+                  # Combine plot & image
   inset_element(p = YB_im,
@@ -382,14 +382,14 @@ m3_2 <- ggplot()+                  # Combine plot & image
 ## Sort out legend: https://wilkelab.org/cowplot/articles/shared_legends.html
 Pt <- ggdraw() +
   draw_plot(m3, x = 0, y = 0, width = 0.5, height = 0.8) +
-  draw_plot(m3_2, x = 0, y = 0.7, width = 0.4, height = 0.3) +
+  draw_plot(m3_2, x = 0.05, y = 0.7, width = 0.4, height = 0.3) +
   draw_plot(m4, x = 0.5, y = 0.11, width = 0.5, height = 0.9) +
   draw_plot_label(label = c("A", "B"), size = 15,
                   x = c(0, 0.5), y = c(1, 1))
 
 ## save the combined plot
 ggsave(plot = Pt, 
-       filename = "Outputs/YBW_vag_SplitPlot.png",
+       filename = "Outputs/YBW_vag_SplitPlot2.png",
        units = "mm", width = 230, height = 175, dpi = 300,   
 )
 
@@ -423,7 +423,7 @@ BL_sub2 <- BL %>%  filter(row_number() %in% c(2,3,5,8))
 Col2 <-  BL_sub2 %>%  filter(sci_name == "Phylloscopus collybita")
 Tris2 <-  BL_sub2 %>%  filter(sci_name == "Phylloscopus tristis")
 YB2 <-  BL_sub2 %>%  filter(sci_name == "Phylloscopus inornatus")
-glimpse(Col2)
+# glimpse(Col2)
 
 ## merge and simplfy the collybita range
 Col3 <- Col2 %>% st_union() %>% st_simplify(dTolerance = 15000)
@@ -433,7 +433,7 @@ Im <- ggplot() +
   
   # Render the eBird map
   geom_raster(data = Precip_df, aes(x=x, y=y, fill=d2h_GS)) +
-  scale_fill_gradient2(low= "#000000", high = "#FFFFFF", name = expression(delta^2*H*"  "*("‰")), midpoint = -30,
+  scale_fill_gradient2(low= "#000000", high = "#FFFFFF", name = expression(delta^2*H*"  "*("‰")), midpoint = -10,
                        guide = guide_colorbar(frame.colour = "#BDC3C7", ticks = TRUE, title.vjust = 1)) +
   # scale_fill_viridis_c(option="inferno", begin = 0,
   #                      end = 1, name = expression(delta^2*H*"  "*("‰"))) +
@@ -448,8 +448,8 @@ Im <- ggplot() +
   geom_sf(data = YB2, aes(geometry = geometry, colour = "#808fe1"), fill = NA, alpha = 1, linetype = "solid", size = 0.75) +
   geom_sf(data = Tris2, aes(geometry = geometry, colour = "#efc86e"), fill = NA, alpha = 1, linetype = "solid", size = 0.75) +
   scale_colour_manual(name = expression("Taxonomic Group"*":"),
-                    values =c("#6f9969"="#6f9969","#efc86e"="#efc86e", "#808fe1"="#808fe1"),
-                    labels = c("P. c. collybita", "P. c. trisits", "P. inornatus")) +
+                    values =c("#6f9969"="#6f9969", "#808fe1"="#808fe1", "#efc86e"="#efc86e"),
+                    labels = c("P. c. collybita", "P. inornatus", "P. c. trisits")) +
   
   # add the coastoutline
   #geom_sf(data = countries, aes(geometry = geometry), size = 0.2) +
