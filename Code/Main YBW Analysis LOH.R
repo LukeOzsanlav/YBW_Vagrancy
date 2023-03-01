@@ -20,7 +20,7 @@ pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif, c
 
 
 
-
+a <- filter(Iso, subspecies == "A");  mean(a$wing) ; sd(a$wing)
 ##------------------------------------##
 #### 1. Read in stable isotope data ####
 ##------------------------------------##
@@ -198,12 +198,12 @@ mod1effects <- predictorEffects(mod1)
 ## rename the sub-species columns first for plotting
 BoxPlot <- Iso %>%                              
                 mutate(subspecies = ifelse(subspecies == "C", "P. c. collybita",
-                                           ifelse(subspecies == "A", "P. c. abietinus", 
+                                           ifelse(subspecies == "A", "Intergrades", 
                                                   ifelse(subspecies == "T", "P. c. trisits", "P. inornatus"))))
 
 IsoModBox <- IsoMod1 %>%                              
               mutate(subspecies = ifelse(subspecies == "C", "P. c. collybita",
-                                         ifelse(subspecies == "A", "P. c. abietinus", 
+                                         ifelse(subspecies == "A", "Intergrades", 
                                                 ifelse(subspecies == "T", "P. c. trisits", "P. inornatus"))))
 
 ## create the plot with significance bars
@@ -211,8 +211,8 @@ bp1 <- ggplot(data = BoxPlot, aes(y = isotope, x = subspecies, fill = subspecies
   geom_jitter(data = IsoModBox, aes(y = isotope, x = subspecies), stroke = 1, alpha = 0.5, colour = "darkgrey", width = 0.1) +
   geom_boxplot(alpha = 0.5, width = 0.4) +
   geom_signif(comparisons = list(c("P. c. collybita", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -40) +
-  geom_signif(comparisons = list(c("P. c. abietinus", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -35) +
-  geom_signif(comparisons = list(c("P. c. abietinus", "P. inornatus")), map_signif_level = TRUE, colour = "black", y_position = -30) +
+  geom_signif(comparisons = list(c("Intergrades", "P. c. trisits")), map_signif_level = TRUE, colour = "black", y_position = -35) +
+  geom_signif(comparisons = list(c("Intergrades", "P. inornatus")), map_signif_level = TRUE, colour = "black", y_position = -30) +
   geom_signif(comparisons = list(c("P. c. collybita", "P. inornatus")), map_signif_level = TRUE, colour = "black", y_position = -25) +
   theme_light() +
   scale_y_continuous(breaks = seq(-140, -20, by = 20)) +
@@ -467,7 +467,7 @@ GR1 <- ggplot(mapping= aes(x= wing, y = fit, group = subspecies, colour = subspe
   geom_line(data= PlotFits, size = 1.25)  +
   xlab("Wing Length/mm") + ylab(expression(delta^2*H*"  "*("‰"))) + labs(colour = "Taxonomic Group") +
   scale_colour_manual(values=c("#882255", "#6f9969", "#efc86e", "#808fe1"), 
-                      labels=c("P. c. abietinus", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
+                      labels=c("Intergrades", "P. c. collybita", "P. c. trisits", "P. inornatus")) +
   annotate("text", x = 54, y = -59.5, colour = "#6f9969", size = 14, label = "*") +
   theme_bw() +
   theme(panel.grid.minor.y = element_blank(),
