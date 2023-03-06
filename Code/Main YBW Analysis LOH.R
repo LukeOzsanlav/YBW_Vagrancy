@@ -20,7 +20,7 @@ pacman::p_load(tidyverse, lubridate, data.table, nlme, effects, ltm, ggsignif, c
 
 
 
-a <- filter(Iso, subspecies == "A");  mean(a$wing) ; sd(a$wing)
+
 ##------------------------------------##
 #### 1. Read in stable isotope data ####
 ##------------------------------------##
@@ -138,6 +138,8 @@ anova(lm(Iso$Cap_yday~ Iso$subspecies))
 #### 4. Test for outliers ####
 ##--------------------------##
 
+## **Removed these test in current draft of MS**
+
 ## Identify any potential outliers
 Aeb <- Iso %>% filter(subspecies == "A"); grubbs.test(Aeb$isotope, opposite = TRUE); grubbs.test(Aeb$isotope, opposite = FALSE)
 Tris <- Iso %>% filter(subspecies == "T"); grubbs.test(Tris$isotope, opposite = TRUE); grubbs.test(Tris$isotope, opposite = FALSE)
@@ -167,7 +169,7 @@ Iso$subspecies <- as.factor(Iso$subspecies)
 IsoMod1 <- Iso %>% drop_na(isotope, subspecies)
 
 ## remove the outlier
-IsoMod1 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
+# IsoMod1 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90))
 
 
 ## Run model in nlme
@@ -233,7 +235,7 @@ ggsave(plot = bp1, filename =  "Outputs/BoxPlot- Comparison of H2 between groups
 
 ## filter the data if needed to remove the outlier
 IsoMod2 <- IsoMod1
-IsoMod2 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90)) # double check outlier is removed
+# IsoMod2 <- IsoMod1 %>% filter(!(subspecies == "A" & isotope < -90)) # double check outlier is removed
 
 
 ## Try just comparing the aubetinus to the other groups
@@ -288,7 +290,7 @@ Iso %>% dplyr::select(Cap_yday, wing, pointedness, weight, condition) %>% group_
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
-Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
+# Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
 Coll <- Iso %>% filter(subspecies == "C") %>% drop_na(wing, Cap_yday, isotope)
 Abie <- Iso %>% filter(subspecies == "A") %>% drop_na(wing, Cap_yday, isotope)
 Tris <- Iso %>% filter(subspecies == "T") %>% drop_na(wing, Cap_yday, isotope)
@@ -503,7 +505,7 @@ Iso %>% dplyr::select(Cap_yday, wing, fat, condition) %>% group_by() %>% summary
 
 ## Now create three data sets, one for each subspecies
 ## dropping the rows with missing data for each along the way
-Iso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
+# aIso <- Iso %>% filter(!(subspecies == "A" & isotope < -90)) # drop outlier
 Coll2 <- Iso %>% filter(subspecies == "C") %>% drop_na(Cap_yday, wing, fat, isotope)
 Abie2 <- Iso %>% filter(subspecies == "A") %>% drop_na(Cap_yday, wing, fat, isotope)
 Tris2 <- Iso %>% filter(subspecies == "T") %>% drop_na(Cap_yday, wing, fat, isotope)
