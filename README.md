@@ -1,6 +1,6 @@
 # Understanding Vagrancy in Yellow-browed Warblers *Phylloscopus inornatus*
 
-![](YBW illustration.png)
+![](`YBW illustration.png`)
 
 Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe using hydorgen stable isotope data. All code and data required to complete the analysis are found on this repository.
 
