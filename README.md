@@ -1,18 +1,15 @@
 # Understanding Vagrancy in Yellow-browed Warblers *Phylloscopus inornatus*
 
-Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe using hydorgen stable isotope data. All code and data required to complete the analysis will be hosted on this repository.
+Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe using hydorgen stable isotope data. All code and data required to complete the analysis are found on this repository.
 
 ## *Authors*
 - Luke Ozsanlav-Harris
+- Robbie Phillips 
+- Jake Bailey
 - Liam Langley
-
-## Models
-Current models run in `Chiff Explore and prelim analysis.R` and to be included in MS
-```{r]
-H2 ~ species grouping
-H2 ~ wing length + Capture day + condition
-Capture day ~ wing length + condition
-```
+- Kester Wilson
+- Richard Inger
+- Stuart Bearhop1
 
 ## Repo Structure
 - `Data`: Data from Jake and Robbie, only 2 files used both read into my code at the start. 
