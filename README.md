@@ -10,7 +10,7 @@ Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe 
 
 Link to pre-print: [click here](https://www.authorea.com/users/574634/articles/628617-exploring-the-origins-of-vagrant-yellow-browed-warblers-in-western-europe)
 
-- Submitted to *Journal of Avian Biology* 08/03/2023
+Submitted to *Journal of Avian Biology* 08/03/2023
 
 ## *Authors*
 - Luke Ozsanlav-Harris <a itemprop="sameAs" content="https://orcid.org/0000-0003-3889-6722" href="https://orcid.org/0000-0003-3889-6722" target="orcid.widget" rel="me noopener noreferrer" style="vertical-align:top;"><img src="https://orcid.org/sites/default/files/images/orcid_16x16.png" alt="ORCID iD icon" style="width:1em;margin-right:.5em;"/></a>
