@@ -6,7 +6,7 @@ Analysis to examine origins of vagrant Yellow-browed Warblers in western Europe 
      width="30%" 
      height="30%" />
      
-## Review Process
+## Review process
 
 Link to pre-print: [click here](https://www.authorea.com/users/574634/articles/628617-exploring-the-origins-of-vagrant-yellow-browed-warblers-in-western-europe)
 
